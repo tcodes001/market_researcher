@@ -225,6 +225,14 @@ class MarketResearchWorkflow:
 
         # Build and return final clean output
         return {
+            "seller_input": {
+                "product_name": seller_input["product_name"],
+                "category": seller_input["category"],
+                "current_price": seller_input["current_price"],
+                "platform": seller_input["platform"],
+                "current_title": seller_input["current_title"],
+                "current_description": seller_input["current_description"]
+            },
             "diagnosis": diagnosis,
             "recommendations": recommendations,
             "critic_trace": final_state.get("critic_trace", []),

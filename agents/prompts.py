@@ -47,12 +47,14 @@ OUTPUT FORMAT (use exactly these labels, no quotes around values):
 DIAGNOSIS:
 TITLE ISSUES: [specific issues compared to top competitor titles]
 DESCRIPTION ISSUES: [specific issues vs top descriptions]
-PRICING ISSUES: [comparison with specific competitor prices]
+PRICING ISSUES: [seller's price vs competitors — state exact 
+competitor prices found and recommend adjustment with reason]
 
 RECOMMENDATIONS:
 RECOMMENDED TITLE: [title without any quotes around it]
 RECOMMENDED DESCRIPTION: [2-3 sentences]
-RECOMMENDED PRICE: ₹[number only]
+RECOMMENDED PRICE: ₹[number only — based on competitor prices found, 
+explain why in PRICING ISSUES section]
 KEYWORDS: [keyword1, keyword2, keyword3, keyword4, keyword5]
 
 SOURCES:
