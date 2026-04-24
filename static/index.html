@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Listing Optimizer</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="logo">Listing Optimizer</div>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-inner">
+      <h1 class="hero-title">Fix Your Listing. Sell More.</h1>
+      <p class="hero-desc">
+        Enter your product details and our AI agents search Amazon India
+        in real time — diagnosing what's holding your listing back and
+        giving you competitor-backed recommendations you can use instantly.
+      </p>
+      <div class="hero-stats">
+        <div class="stat">
+          <span class="stat-num">3</span>
+          <span class="stat-label">AI Agents</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat">
+          <span class="stat-num">Live</span>
+          <span class="stat-label">Amazon India Data</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FORM -->
+  <section class="form-section" id="formSection">
+    <div class="form-card">
+      <div class="form-header">
+        <h2>Analyze Your Listing</h2>
+        <p>All fields are required for accurate market research</p>
+      </div>
+
+      <form id="researchForm">
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="product_name">Product Name</label>
+            <input
+              type="text"
+              id="product_name"
+              placeholder="e.g. Ethnic Kurti, Bluetooth Earphones"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label for="category">Category</label>
+            <input
+              type="text"
+              id="category"
+              placeholder="e.g. Women's Ethnic Wear, Electronics"
+              required
+            />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="product_details">
+            Product Details
+            <span class="tooltip-wrap">
+              <span class="tooltip-icon">?</span>
+              <span class="tooltip-box">
+                <strong>Be specific!</strong> Include:<br/>
+                • Material or fabric (e.g. 100% cotton, bluetooth 5.0)<br/>
+                • Size, weight, or dimensions<br/>
+                • Key features (e.g. noise cancellation, straight fit)<br/>
+                • Colors (e.g. blue and terracotta, matte black)<br/>
+                • Occasion or use (e.g. festive wear, daily use)<br/><br/>
+                Avoid: "good quality", "nice product", "best item"
+              </span>
+            </span>
+          </label>
+          <textarea
+            id="product_details"
+            rows="3"
+            placeholder="e.g. cotton fabric, straight fit, festive and daily wear, blue and terracotta colors, sizes S-XXL"
+            required
+          ></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="current_price">Current Price (₹)</label>
+          <input
+            type="number"
+            id="current_price"
+            placeholder="e.g. 499"
+            min="10"
+            max="100000"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="target_audience">
+            Target Audience
+            <span class="tooltip-wrap">
+              <span class="tooltip-icon">?</span>
+              <span class="tooltip-box">
+                <strong>Who buys this product?</strong><br/>
+                Include gender and age range:<br/>
+                • "Women 18-35"<br/>
+                • "Men 25-45"<br/>
+                • "Kids 3-8 years"<br/>
+                • "Parents of children aged 3-6"<br/>
+                • "Men and Women 20-40"
+              </span>
+            </span>
+          </label>
+          <input
+            type="text"
+            id="target_audience"
+            placeholder="e.g. Women 18-35, Men 25-45, Kids 3-8 years"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="current_title">Your Current Listing Title</label>
+          <input
+            type="text"
+            id="current_title"
+            placeholder="e.g. Blue Kurti for Women"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="current_description">Your Current Listing Description</label>
+          <textarea
+            id="current_description"
+            rows="3"
+            placeholder="e.g. Good quality kurti available in all sizes"
+            required
+          ></textarea>
+        </div>
+
+        <button type="submit" class="btn-submit" id="submitBtn">
+          Analyze My Listing
+        </button>
+
+      </form>
+    </div>
+  </section>
+
+  <!-- LOADING -->
+  <section class="loading-section" id="loadingSection" style="display:none">
+    <div class="loading-card">
+      <div class="loading-spinner"></div>
+      <h3>Analyzing Your Listing</h3>
+      <div class="loading-steps">
+        <div class="loading-step" id="step1">
+          <span class="step-dot"></span>
+          Searching Amazon India for competitors...
+        </div>
+        <div class="loading-step" id="step2">
+          <span class="step-dot"></span>
+          Extracting pricing and rating data...
+        </div>
+        <div class="loading-step" id="step3">
+          <span class="step-dot"></span>
+          Critic agent evaluating research quality...
+        </div>
+        <div class="loading-step" id="step4">
+          <span class="step-dot"></span>
+          Generating your recommendations...
+        </div>
+      </div>
+      <p class="loading-note">
+        This takes 30–60 seconds. Our AI agents are searching live Amazon India data.
+      </p>
+    </div>
+  </section>
+
+  <!-- RESULTS -->
+  <section class="results-section" id="resultsSection" style="display:none">
+    <div class="results-inner">
+
+      <div class="results-meta" id="resultsMeta"></div>
+
+      <div class="results-block">
+        <div class="block-header">
+          <h3>Diagnosis</h3>
+          <span class="block-sub">What's holding your listing back</span>
+        </div>
+        <div class="diagnosis-grid">
+          <div class="diag-card">
+            <div class="diag-label">Title Issues</div>
+            <div class="diag-text" id="diagTitleText"></div>
+          </div>
+          <div class="diag-card">
+            <div class="diag-label">Description Issues</div>
+            <div class="diag-text" id="diagDescText"></div>
+          </div>
+          <div class="diag-card">
+            <div class="diag-label">Pricing Issues</div>
+            <div class="diag-text" id="diagPriceText"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="results-block">
+        <div class="block-header">
+          <h3>Recommendations</h3>
+          <span class="block-sub">Copy-paste ready improvements</span>
+        </div>
+        <div class="reco-grid">
+          <div class="reco-card">
+            <div class="reco-label">Recommended Title</div>
+            <div class="reco-value" id="recoTitle"></div>
+            <button class="copy-btn" onclick="copyText('recoTitle')">Copy</button>
+          </div>
+          <div class="reco-card">
+            <div class="reco-label">Recommended Description</div>
+            <div class="reco-value" id="recoDesc"></div>
+            <button class="copy-btn" onclick="copyText('recoDesc')">Copy</button>
+          </div>
+          <div class="reco-row">
+            <div class="reco-card">
+              <div class="reco-label">Recommended Price</div>
+              <div class="reco-value" id="recoPrice"></div>
+            </div>
+            <div class="reco-card">
+              <div class="reco-label">Keywords</div>
+              <div class="keywords-list" id="recoKeywords"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="results-block">
+        <div class="block-header">
+          <h3>Live Data Sources</h3>
+          <span class="block-sub">Amazon India competitor pages used</span>
+        </div>
+        <div class="sources-list" id="sourcesList"></div>
+      </div>
+
+      <div class="analyze-again">
+        <button class="btn-again" onclick="resetForm()">
+          Analyze Another Listing
+        </button>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ERROR -->
+  <section class="error-section" id="errorSection" style="display:none">
+    <div class="error-card">
+      <h3>Something went wrong</h3>
+      <p id="errorMessage"></p>
+      <button class="btn-again" onclick="resetForm()">Try Again</button>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <p>Built with LangGraph · MCP · GPT-4o · Tavily · FastAPI</p>
+    <p>© 2026 techainet.com</p>
+  </footer>
+
+  <script>
+    let stepInterval = null;
+
+    function startLoadingSteps() {
+      const steps = ['step1','step2','step3','step4'];
+      let current = 0;
+      document.getElementById(steps[0]).classList.add('active');
+      stepInterval = setInterval(() => {
+        if (current < steps.length - 1) {
+          document.getElementById(steps[current]).classList.add('done');
+          current++;
+          document.getElementById(steps[current]).classList.add('active');
+        }
+      }, 12000);
+    }
+
+    function stopLoadingSteps() {
+      if (stepInterval) clearInterval(stepInterval);
+      ['step1','step2','step3','step4'].forEach(s => {
+        document.getElementById(s).classList.add('done');
+        document.getElementById(s).classList.remove('active');
+      });
+    }
+
+    function copyText(id) {
+      const text = document.getElementById(id).innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById(id)
+          .parentElement.querySelector('.copy-btn');
+        btn.textContent = 'Copied!';
+        setTimeout(() => btn.textContent = 'Copy', 2000);
+      });
+    }
+
+    function resetForm() {
+      document.getElementById('resultsSection').style.display = 'none';
+      document.getElementById('errorSection').style.display = 'none';
+      document.getElementById('loadingSection').style.display = 'none';
+      document.getElementById('formSection').style.display = 'block';
+      document.getElementById('submitBtn').disabled = false;
+      ['step1','step2','step3','step4'].forEach(s => {
+        document.getElementById(s).classList.remove('active','done');
+      });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function renderResults(data) {
+      document.getElementById('resultsMeta').innerHTML = `
+        <div class="meta-item">
+          <span class="meta-label">Product</span>
+          <span class="meta-value">${data.seller_input.product_name}</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Benchmarked On</span>
+          <span class="meta-value">Amazon India</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Current Price</span>
+          <span class="meta-value">₹${data.seller_input.current_price}</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">AI Attempts</span>
+          <span class="meta-value">${data.attempts}</span>
+        </div>
+      `;
+
+      document.getElementById('diagTitleText').textContent =
+        data.diagnosis.title_issues || 'No issues found.';
+      document.getElementById('diagDescText').textContent =
+        data.diagnosis.description_issues || 'No issues found.';
+      document.getElementById('diagPriceText').textContent =
+        data.diagnosis.pricing_issues || 'No issues found.';
+
+      document.getElementById('recoTitle').textContent =
+        data.recommendations.recommended_title;
+      document.getElementById('recoDesc').textContent =
+        data.recommendations.recommended_description;
+      document.getElementById('recoPrice').textContent =
+        data.recommendations.recommended_price;
+
+      const kwContainer = document.getElementById('recoKeywords');
+      kwContainer.innerHTML = '';
+      (data.recommendations.keywords || []).forEach(kw => {
+        const tag = document.createElement('span');
+        tag.className = 'kw-tag';
+        tag.textContent = kw;
+        kwContainer.appendChild(tag);
+      });
+
+      const sourcesContainer = document.getElementById('sourcesList');
+      sourcesContainer.innerHTML = '';
+      (data.sources || []).forEach(url => {
+        const a = document.createElement('a');
+        a.href = url;
+        a.target = '_blank';
+        a.className = 'source-link';
+        a.textContent = url.replace('https://www.amazon.in/', 'amazon.in/');
+        sourcesContainer.appendChild(a);
+      });
+
+      document.getElementById('resultsSection').style.display = 'block';
+      document.getElementById('resultsSection')
+        .scrollIntoView({ behavior: 'smooth' });
+    }
+
+    document.getElementById('researchForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const payload = {
+        product_name: document.getElementById('product_name').value.trim(),
+        category: document.getElementById('category').value.trim(),
+        product_details: document.getElementById('product_details').value.trim(),
+        current_price: parseFloat(document.getElementById('current_price').value),
+        platform: "amazon",
+        target_audience: document.getElementById('target_audience').value.trim(),
+        current_title: document.getElementById('current_title').value.trim(),
+        current_description: document.getElementById('current_description').value.trim()
+      };
+
+      document.getElementById('formSection').style.display = 'none';
+      document.getElementById('loadingSection').style.display = 'flex';
+      document.getElementById('errorSection').style.display = 'none';
+      document.getElementById('resultsSection').style.display = 'none';
+      startLoadingSteps();
+
+      try {
+        const response = await fetch('/research', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+        stopLoadingSteps();
+        document.getElementById('loadingSection').style.display = 'none';
+
+        if (!response.ok) {
+          let msg = 'An error occurred. Please check your inputs and try again.';
+          if (data.detail) {
+            if (Array.isArray(data.detail)) {
+              msg = data.detail
+                .map(d => d.msg.replace('Value error, ', ''))
+                .join('\n');
+            } else {
+              msg = data.detail;
+            }
+          }
+          document.getElementById('errorMessage').textContent = msg;
+          document.getElementById('errorSection').style.display = 'flex';
+          document.getElementById('formSection').style.display = 'block';
+          return;
+        }
+
+        renderResults(data);
+
+      } catch (err) {
+        stopLoadingSteps();
+        document.getElementById('loadingSection').style.display = 'none';
+        document.getElementById('formSection').style.display = 'block';
+        document.getElementById('errorMessage').textContent =
+          'Could not connect to the server. Please try again.';
+        document.getElementById('errorSection').style.display = 'flex';
+      }
+    });
+  </script>
+</body>
+</html>

@@ -6,24 +6,27 @@ Responsibilities:
 - Initialize MCP connection at startup
 - Build LangGraph workflow with loaded tools
 - Expose REST endpoints for seller input
+- Serve frontend static files
 - Clean up MCP on shutdown
 """
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field, field_validator
 from graph.workflow import MarketResearchWorkflow
 from tools.mcp_clients import MCPClient
 import logging
 
-# ── Logging Setup ─────────────────────────────────────────────
+# Logging Setup 
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
-# ── FastAPI App ───────────────────────────────────────────────
+# FastAPI App 
 application = FastAPI(
     title="Multi-Agent Listing Optimizer",
     description=(
@@ -42,12 +45,19 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
-# ── Singletons ────────────────────────────────────────────────
+# Static Files 
+app.mount(
+    "/static",
+    StaticFiles(directory="static"),
+    name="static"
+)
+
+# MCP + Workflow 
 mcp_client = MCPClient()
 workflow = MarketResearchWorkflow()
 
 
-# ── Startup & Shutdown ────────────────────────────────────────
+# Startup and Shutdown 
 @app.on_event("startup")
 async def startup_event():
     """
@@ -79,7 +89,7 @@ async def shutdown_event():
     logger.info("✅ MCP session closed cleanly.")
 
 
-# ── Input Model ───────────────────────────────────────────────
+# Input Model
 class SellerInput(BaseModel):
     product_name: str = Field(
         ...,
@@ -150,7 +160,7 @@ class SellerInput(BaseModel):
                 f"{', '.join(valid_platforms)}"
             )
         return v
-    
+
     @field_validator("product_details")
     @classmethod
     def product_details_must_be_specific(cls, v):
@@ -170,10 +180,11 @@ class SellerInput(BaseModel):
         if len(details_lower) < 20:
             raise ValueError(
                 "Product details are too short. "
-                "Please describe your product's specific attributes "
-                "such as material, size, color, features, or occasion. "
-                "The more specific you are, the more accurate "
-                "your market research will be."
+                "Please describe your product's specific "
+                "attributes such as material, size, color, "
+                "features, or occasion. The more specific "
+                "you are, the more accurate your market "
+                "research will be."
             )
 
         words = details_lower.split()
@@ -185,28 +196,38 @@ class SellerInput(BaseModel):
 
         if len(meaningful_words) < 3:
             raise ValueError(
-                "Product details must include specific attributes. "
-                "Avoid generic phrases like 'good quality' or "
-                "'nice product'. Describe what makes your product "
-                "unique — its material, dimensions, features, "
-                "colors, or intended use."
+                "Product details must include specific "
+                "attributes. Avoid generic phrases like "
+                "'good quality' or 'nice product'. Describe "
+                "what makes your product unique — its material, "
+                "dimensions, features, colors, or intended use."
             )
 
         return v
 
 
-# ── Endpoints ─────────────────────────────────────────────────
+# Routes 
 @app.get("/")
+async def landing():
+    """
+    Serves the frontend landing page.
+    FastAPI returns index.html for the root URL.
+    """
+    return FileResponse("static/index.html")
+
+
+@app.get("/health")
 def health_check():
     """
     Health check endpoint.
     Used by AWS Elastic Beanstalk to verify app is running.
+    Moved from / to /health since / now serves the frontend.
     """
     return {
         "status": "online",
         "service": "Multi-Agent Listing Optimizer",
         "version": "1.0.0",
-        "domain": "techainet.com"
+        "domain": "listingoptimizer.techainet.com"
     }
 
 
@@ -249,3 +270,5 @@ async def run_research(request: SellerInput):
             status_code=500,
             detail=f"Research failed: {str(e)}"
         )
+    
+    

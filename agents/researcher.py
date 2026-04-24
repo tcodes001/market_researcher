@@ -624,6 +624,11 @@ class ResearcherAgent:
 
             {critic_instruction}
             """
+        meaningful_sources = [
+            url for url in sources
+            if url.count('/') > 4  # has product name in path
+            or 'dp' not in url
+        ]
 
         final_response = await self.llm.ainvoke([
             SystemMessage(content=ANALYSIS_SYSTEM_PROMPT),
@@ -641,7 +646,7 @@ class ResearcherAgent:
                     "missing required sections. "
                     "Please retry with more specific searches."
                 ),
-                "sources": list(set(sources)),
+                "sources": list(set(meaningful_sources)),
                 "is_verified": False,
                 "retry_count": state.get("retry_count", 0)
             }
@@ -649,13 +654,13 @@ class ResearcherAgent:
         logger.info(
             f"Researcher complete — "
             f"output length: {len(final_response.content)} chars, "
-            f"sources: {len(sources)}"
+            f"sources: {len(meaningful_sources)}"
         )
 
         return {
             **state,
             "research_output": final_response.content,
-            "sources": list(set(sources)),
+            "sources": list(set(meaningful_sources)),
             "is_verified": False,
             "retry_count": state.get("retry_count", 0)
         }

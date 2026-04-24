@@ -49,14 +49,74 @@ Before writing anything, scan ALL results and:
 
 OUTPUT FORMAT (use exactly these labels, no quotes around values):
 DIAGNOSIS:
-TITLE ISSUES: [specific issues compared to top competitor titles]
-DESCRIPTION ISSUES: [specific issues vs top descriptions]
+TITLE ISSUES: [Follow these exact steps:
+
+STEP A — List what categories the seller's title already contains.
+Look at the seller's current title and identify which categories
+are already present (material, fit, occasion, color, size, etc).
+
+STEP B — Look at top competitor titles and list all categories
+they use that are relevant for this product type.
+
+STEP C — Compare: which categories do competitors use that the
+seller's title does NOT have?
+
+STEP D — Write the diagnosis using this format:
+"Your title already mentions [categories seller has].
+However top competitors also include [missing categories]
+which your title does not mention.
+For example [Competitor] (₹X, X★, X reviews) includes
+[specific missing category examples] in their title."
+
+NEVER say "your title has none of these" if the seller's title
+already mentions some of the categories.
+NEVER copy the seller's title back to them word for word as
+the only thing they wrote.
+Always acknowledge what the seller got right before saying
+what is missing.]
+
+
+DESCRIPTION ISSUES: [Follow these exact steps:
+
+STEP A — List what categories the seller's description already contains.
+Look at the seller's current description and identify which categories
+are already present (material, fit, occasion, features, size, etc).
+
+STEP B — Look at top competitor descriptions and list all categories
+they use that are relevant for this product type.
+
+STEP C — Compare: which categories do competitors use that the
+seller's description does NOT have?
+
+STEP D — Write the diagnosis using this format:
+"Your description already mentions [categories seller has].
+However top competitors also describe [missing categories]
+which your description does not cover.
+For example [Competitor] (X★, X reviews) describes
+[specific missing category examples] in their listing."
+
+NEVER say "your description lacks these details" if the seller's
+description already mentions some categories correctly.
+NEVER copy the seller's description back to them word for word
+as the only thing they wrote.
+Always acknowledge what the seller got right before saying
+what is missing.]
+STRICT RULE:
+Do NOT introduce specific values that the seller never mentioned.
+If seller didn't mention a material — say competitors mention
+material type and seller's description doesn't, but do NOT
+name a specific material.
+If seller didn't mention fit — say competitors mention fit
+details and seller's description doesn't, but do NOT name
+a specific fit type.
+The diagnosis should tell the seller WHAT CATEGORY is missing
+not WHAT SPECIFIC VALUE to use — that belongs in recommendations
+which must be grounded in seller's own input and search results.]
 PRICING ISSUES: [State exact competitor prices and ratings
 found. Apply the pricing scenario from PRICING REASONING
 RULES above. Write conclusion in plain English only —
 no scenario labels, no template text.
 The conclusion MUST match RECOMMENDED PRICE below.]
-
 
 
 RECOMMENDATIONS:
@@ -157,9 +217,15 @@ CRITICAL — HALLUCINATION PREVENTION:
 - If a term does not appear in any search result, do NOT use it
 - Never use terms from your training knowledge
 - Never use terms only from the seller's input
+- NEVER recommend a specific material in title or description
+  unless the seller explicitly mentioned it in product_details
+- If seller mentioned "cotton" — only use cotton in recommendations
+- If seller didn't mention any material — describe style, fit, 
+  occasion only. Do not introduce any material from competitors.
 - Every recommendation must be traceable to a specific competitor
 - Recommended description must use competitor description
   patterns — never paraphrase the seller's own input
+
 """
 
 QUERY_BUILDER_SYSTEM_PROMPT = """
