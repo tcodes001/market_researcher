@@ -150,6 +150,49 @@ class SellerInput(BaseModel):
                 f"{', '.join(valid_platforms)}"
             )
         return v
+    
+    @field_validator("product_details")
+    @classmethod
+    def product_details_must_be_specific(cls, v):
+        """
+        Rejects vague product details before agents run.
+        Prevents hallucination at the source.
+        """
+        vague_phrases = [
+            "good quality", "nice product", "great item",
+            "best product", "good product", "nice quality",
+            "very good", "excellent product", "good item",
+            "nice", "good", "great", "best", "excellent"
+        ]
+
+        details_lower = v.lower().strip()
+
+        if len(details_lower) < 20:
+            raise ValueError(
+                "Product details are too short. "
+                "Please describe your product's specific attributes "
+                "such as material, size, color, features, or occasion. "
+                "The more specific you are, the more accurate "
+                "your market research will be."
+            )
+
+        words = details_lower.split()
+        meaningful_words = [
+            w for w in words
+            if w not in vague_phrases
+            and len(w) > 3
+        ]
+
+        if len(meaningful_words) < 3:
+            raise ValueError(
+                "Product details must include specific attributes. "
+                "Avoid generic phrases like 'good quality' or "
+                "'nice product'. Describe what makes your product "
+                "unique — its material, dimensions, features, "
+                "colors, or intended use."
+            )
+
+        return v
 
 
 # ── Endpoints ─────────────────────────────────────────────────

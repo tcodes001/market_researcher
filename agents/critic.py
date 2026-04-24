@@ -32,21 +32,20 @@ class CriticAgent:
         )
 
     async def __call__(self, state: dict) -> dict:
-        """
-        LangGraph node interface.
-        Evaluates research and updates state with verdict.
-        """
         research = state.get("research_output", "")
         retry_count = state.get("retry_count", 0)
-        critic_trace = state.get("critic_trace", [])
+        critic_trace = list(state.get("critic_trace", []))
 
-        # Hard stop — force approve after 3 retries
-        # Prevents infinite loop burning OpenAI credits
         if retry_count >= 3:
-            critic_trace.append({
-                "attempt": retry_count + 1,
-                "verdict": "APPROVED: max retries reached, returning best available research"
-            })
+            hard_stop_verdict = (
+                "APPROVED: max retries reached, "
+                "returning best available research"
+            )
+            if not critic_trace or critic_trace[-1]["verdict"] != hard_stop_verdict:
+                critic_trace.append({
+                    "attempt": retry_count + 1,
+                    "verdict": hard_stop_verdict
+                })
             return {
                 **state,
                 "is_verified": True,
@@ -54,7 +53,6 @@ class CriticAgent:
                 "critic_feedback": ""
             }
 
-        # Ask LLM to evaluate research quality
         evaluation = await self.llm.ainvoke([
             SystemMessage(content=CRITIC_SYSTEM_PROMPT),
             HumanMessage(
@@ -65,8 +63,6 @@ class CriticAgent:
         verdict = evaluation.content.strip()
         is_approved = verdict.upper().startswith("APPROVED")
 
-        # Add this attempt to critic_trace
-        # This is what proves the agentic loop ran
         critic_trace.append({
             "attempt": retry_count + 1,
             "verdict": verdict
@@ -81,8 +77,6 @@ class CriticAgent:
                 "retry_count": retry_count
             }
 
-        # Not approved — increment retry count
-        # and pass specific feedback to researcher
         return {
             **state,
             "is_verified": False,

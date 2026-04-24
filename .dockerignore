@@ -1,0 +1,36 @@
+# Environment and secrets
+.env
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Virtual environments
+market-env/
+venv/
+.venv/
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+
+# Logs
+*.log
+
+# Test files
+pytest_cache/
+.pytest_cache/
+
+# Docker itself
+Dockerfile
+.dockerignore

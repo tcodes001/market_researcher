@@ -2,23 +2,17 @@
 """
 LangGraph Workflow — connects all three agents into a
 stateful, cyclic multi-agent graph.
-
-Flow:
-Researcher → Critic → Validator → END
-     ↑           |         |
-     |←←←←←←←←←←|         |
-     |←←←←←←←←←←←←←←←←←←←|
 """
 
 from langgraph.graph import StateGraph, END
-from typing import TypedDict, Annotated, List, Any
-from langchain_core.messages import BaseMessage
-import operator
+from typing import TypedDict
 
 from agents.researcher import ResearcherAgent
 from agents.critic import CriticAgent
 from agents.validator import ValidatorAgent
 
+import logging
+logger = logging.getLogger(__name__)
 
 # ── State Schema ──────────────────────────────────────────────
 class AgentState(TypedDict):
@@ -38,7 +32,6 @@ class AgentState(TypedDict):
     # Validator fields
     is_validated: bool
     validator_feedback: str
-    validator_retries: int
 
 
 # ── Routing Functions ─────────────────────────────────────────
@@ -143,13 +136,17 @@ class MarketResearchWorkflow:
         self, research: str
     ) -> tuple[dict, dict]:
         """
-        Parses the structured text output from Researcher
-        into separate diagnosis and recommendations dicts.
+        Parses structured text output from Researcher.
 
-        Why parse here and not in Researcher?
-        Researcher's job is to produce research.
-        Formatting for the API response is workflow's job.
-        Separation of concerns.
+        Handles both single-line and multi-line field values.
+        LLM sometimes puts values on same line as label,
+        sometimes on subsequent lines with bullet points.
+        This parser handles both formats correctly.
+
+        Approach:
+        - Track which field we are currently reading
+        - Accumulate all lines belonging to that field
+        - Save accumulated content when next label found
         """
         diagnosis = {
             "title_issues": "",
@@ -163,30 +160,107 @@ class MarketResearchWorkflow:
             "keywords": []
         }
 
-        lines = research.split("\n")
-        for line in lines:
-            line = line.strip()
+        # Maps label → (which dict, which key)
+        field_labels = {
+            "TITLE ISSUES:": ("diagnosis", "title_issues"),
+            "DESCRIPTION ISSUES:": ("diagnosis", "description_issues"),
+            "PRICING ISSUES:": ("diagnosis", "pricing_issues"),
+            "RECOMMENDED TITLE:": ("recommendations", "recommended_title"),
+            "RECOMMENDED DESCRIPTION:": ("recommendations", "recommended_description"),
+            "RECOMMENDED PRICE:": ("recommendations", "recommended_price"),
+            "KEYWORDS:": ("recommendations", "keywords"),
+        }
 
-            # Parse diagnosis fields
-            if line.upper().startswith("TITLE ISSUES:"):
-                diagnosis["title_issues"] = line.split(":", 1)[1].strip()
-            elif line.upper().startswith("DESCRIPTION ISSUES:"):
-                diagnosis["description_issues"] = line.split(":", 1)[1].strip()
-            elif line.upper().startswith("PRICING ISSUES:"):
-                diagnosis["pricing_issues"] = line.split(":", 1)[1].strip()
+        # Section headers that signal end of a field
+        section_headers = {
+            "DIAGNOSIS:", "RECOMMENDATIONS:", "SOURCES:",
+            "DATA QUALITY:", "IMPORTANT:", "CRITICAL:",
+            "COMPETITOR LISTINGS FOUND:", "PRICES FOUND:",
+            "RATINGS FOUND:", "REVIEWS FOUND:",
+            "COMPETITOR NAMES FOUND:"
+        }
 
-            # Parse recommendation fields
-            elif line.upper().startswith("RECOMMENDED TITLE:"):
-                recommendations["recommended_title"] = line.split(":", 1)[1].strip()
-            elif line.upper().startswith("RECOMMENDED DESCRIPTION:"):
-                recommendations["recommended_description"] = line.split(":", 1)[1].strip()
-            elif line.upper().startswith("RECOMMENDED PRICE:"):
-                recommendations["recommended_price"] = line.split(":", 1)[1].strip()
-            elif line.upper().startswith("KEYWORDS:"):
-                keywords_str = line.split(":", 1)[1].strip()
-                recommendations["keywords"] = [
-                    k.strip() for k in keywords_str.split(",")
-                ]
+        current_dict_name = None
+        current_key = None
+        accumulated_lines = []
+
+        def save_current_field():
+            """Save accumulated lines to the correct dict."""
+            if current_dict_name is None or current_key is None:
+                return
+            if not accumulated_lines:
+                return
+
+            value = " ".join(accumulated_lines).strip()
+
+            if current_key == "keywords":
+                # Clean keywords — remove parentheses and citations
+                raw_keywords = value.split(",")
+                clean_keywords = []
+                for kw in raw_keywords:
+                    # Strip everything after "(" — removes citations
+                    kw = kw.split("(")[0].strip()
+                    # Strip bullet points and dashes
+                    kw = kw.lstrip("- •*").strip()
+                    if kw and len(kw) > 1:
+                        clean_keywords.append(kw)
+                recommendations["keywords"] = clean_keywords
+
+            elif current_dict_name == "diagnosis":
+                # Clean bullet points from diagnosis fields
+                cleaned = value.replace("- ", " ").replace("• ", " ")
+                diagnosis[current_key] = cleaned.strip()
+
+            elif current_dict_name == "recommendations":
+                recommendations[current_key] = value
+
+        for line in research.split("\n"):
+            stripped = line.strip()
+            if not stripped:
+                continue
+
+            upper = stripped.upper()
+
+            # Check if this line is a field label
+            matched_label = False
+            for label, (dict_name, key) in field_labels.items():
+                if upper.startswith(label):
+                    # Save what we were accumulating
+                    save_current_field()
+
+                    # Start new field
+                    current_dict_name = dict_name
+                    current_key = key
+                    accumulated_lines = []
+
+                    # Get value on same line as label if any
+                    remainder = stripped[len(label):].strip()
+                    if remainder:
+                        accumulated_lines.append(remainder)
+
+                    matched_label = True
+                    break
+
+            if matched_label:
+                continue
+
+            # Check if this is a section header
+            is_section = any(
+                upper.startswith(h) for h in section_headers
+            )
+            if is_section:
+                save_current_field()
+                current_dict_name = None
+                current_key = None
+                accumulated_lines = []
+                continue
+
+            # Accumulate continuation lines for current field
+            if current_dict_name is not None:
+                accumulated_lines.append(stripped)
+
+        # Save the last field
+        save_current_field()
 
         return diagnosis, recommendations
 
@@ -211,13 +285,17 @@ class MarketResearchWorkflow:
             "critic_trace": [],
             "retry_count": 0,
             "is_validated": False,
-            "validator_feedback": "",
-            "validator_retries": 0
+            "validator_feedback": ""
         }
 
         # Run the graph
         final_state = await self.graph.ainvoke(initial_state)
-
+        # TEMPORARY DEBUG
+        logger.info(
+            f"RAW OUTPUT:\n"
+            f"{final_state.get('research_output', 'EMPTY')[:1000]}"
+        )
+        
         # Parse research output into structured format
         diagnosis, recommendations = self._parse_research_output(
             final_state["research_output"]

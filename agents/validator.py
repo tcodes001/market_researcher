@@ -7,7 +7,8 @@ Responsibilities:
 - Reject if suggesting different product or material
 - Reject if prices are unrealistic for Indian market
 - Reject if keywords don't match seller's product
-- 1 retry only — loops back to Researcher with specific feedback
+- Uses retry_count as single source of truth
+- Hard stop at retry_count >= 2
 """
 
 from langchain_openai import ChatOpenAI
@@ -15,6 +16,8 @@ from langchain_core.messages import SystemMessage, HumanMessage
 from agents.prompts import VALIDATOR_SYSTEM_PROMPT
 from dotenv import load_dotenv
 import os
+import logging
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
@@ -36,14 +39,19 @@ class ValidatorAgent:
         """
         LangGraph node interface.
         Checks relevance of recommendations to seller's product.
+
+        Uses retry_count as single source of truth.
+        No separate validator_retries counter.
+        If retry_count >= 2 after validator rejection,
+        accept with warning rather than looping indefinitely.
         """
         research = state.get("research_output", "")
         seller = state["seller_input"]
-        validator_retries = state.get("validator_retries", 0)
+        retry_count = state.get("retry_count", 0)
 
-        # Hard stop — validator gets 1 retry only
-        # After that return best available with warning
-        if validator_retries >= 1:
+        # Hard stop — if already retried twice, accept
+        # best available rather than looping indefinitely
+        if retry_count >= 2:
             return {
                 **state,
                 "is_validated": True,
@@ -54,23 +62,20 @@ class ValidatorAgent:
                 )
             }
 
-        # Build validation prompt with seller context
-        # so LLM can compare recommendations against
-        # seller's actual product
         validation_prompt = f"""
-SELLER'S ACTUAL PRODUCT:
-Product Name: {seller['product_name']}
-Category: {seller['category']}
-Product Details: {seller['product_details']}
-Current Price: ₹{seller['current_price']}
-Platform: {seller['platform']}
+            SELLER'S ACTUAL PRODUCT:
+            Product Name: {seller['product_name']}
+            Category: {seller['category']}
+            Product Details: {seller['product_details']}
+            Current Price: ₹{seller['current_price']}
+            Platform: {seller['platform']}
 
-RECOMMENDATIONS TO VALIDATE:
-{research}
+            RECOMMENDATIONS TO VALIDATE:
+            {research}
 
-Check if these recommendations are relevant and implementable
-for THIS specific seller's product.
-"""
+            Check if these recommendations are impossible
+            for THIS specific seller to implement.
+            """
 
         evaluation = await self.llm.ainvoke([
             SystemMessage(content=VALIDATOR_SYSTEM_PROMPT),
@@ -78,6 +83,7 @@ for THIS specific seller's product.
         ])
 
         verdict = evaluation.content.strip()
+        logger.info(f"Validator verdict: {verdict}")
         is_validated = verdict.upper().startswith("VALIDATED")
 
         if is_validated:
@@ -87,24 +93,18 @@ for THIS specific seller's product.
                 "validator_feedback": verdict
             }
 
-        # Not validated — send back to Researcher
-        # with validator's specific feedback
-        # increment validator_retries so we don't
-        # loop more than once
+        # Rejected — increment retry_count and loop back
+        # to Researcher with specific feedback
         return {
             **state,
             "is_validated": False,
             "validator_feedback": verdict,
-            "validator_retries": validator_retries + 1,
-            # Inject validator feedback into critic_feedback
-            # so Researcher picks it up in _build_queries
             "critic_feedback": (
-                f"RETRY: {verdict}. "
-                f"Ensure recommendations match seller's "
-                f"actual product: {seller['product_details']}"
+                "RETRY: " + verdict +
+                ". Ensure recommendations match seller's "
+                "actual product: " + seller["product_details"]
             ),
-            # Reset verification so workflow routes
-            # back to Researcher correctly
             "is_verified": False,
-            "retry_count": state.get("retry_count", 0)
+            "retry_count": retry_count + 1,
+            "critic_trace": list(state.get("critic_trace", []))
         }
