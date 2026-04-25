@@ -1,0 +1,22 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 741448920886.dkr.ecr.us-east-1.amazonaws.com
+  build:
+    commands:
+      - echo Building Docker image...
+      - docker build -t market-researcher .
+      - docker tag market-researcher:latest 741448920886.dkr.ecr.us-east-1.amazonaws.com/market-researcher:latest
+  post_build:
+    commands:
+      - echo Pushing to ECR...
+      - docker push 741448920886.dkr.ecr.us-east-1.amazonaws.com/market-researcher:latest
+      - echo Writing Dockerrun.aws.json...
+      - printf '{"AWSEBDockerrunVersion":"1","Image":{"Name":"741448920886.dkr.ecr.us-east-1.amazonaws.com/market-researcher:latest","Update":"true"},"Ports":[{"ContainerPort":8000,"HostPort":80}]}' > Dockerrun.aws.json
+
+artifacts:
+  files:
+    - Dockerrun.aws.json
