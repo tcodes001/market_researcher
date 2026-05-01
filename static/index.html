@@ -411,7 +411,7 @@
         document.getElementById('loadingSection').style.display = 'none';
 
         if (!response.ok) {
-          let msg = 'An error occurred. Please check your inputs and try again.';
+          let msg = 'An error has occurred. Please check your inputs and try again.';
           if (data.detail) {
             if (Array.isArray(data.detail)) {
               msg = data.detail
