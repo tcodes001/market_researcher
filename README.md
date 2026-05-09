@@ -20,12 +20,13 @@ Sellers input their product details. The system searches Amazon India live, find
 
 ------------------------------------------------------------------------------------
 ## Architecture
-
+```
 Seller Input → Researcher → Critic → Validator → Output
                    ↑_____________|        |
                    |                      |
                    |______________________|
                 (shared retry counter, max 3 total retries)
+```
 **Researcher** — builds queries, searches Amazon India via Tavily MCP, extracts content per URL, filters irrelevant results using an LLM, synthesises diagnosis and recommendations.
 
 **Critic** — evaluates research quality against 8 criteria (named competitors, specific prices, star ratings, review counts). Returns RETRY with feedback if criteria not met.
